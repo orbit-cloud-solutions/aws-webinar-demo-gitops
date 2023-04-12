@@ -24,7 +24,7 @@ public class DemoApplication {
     @RequestMapping("/")
     public String hello(@RequestHeader HttpHeaders headers){
         
-        logger.info("Logging test: " + headers.toString() );
+        logger.info("Request logging: " + headers.toString() );
 
         return "CICD Demo: version =  "+buildProperties.getVersion();
     }
