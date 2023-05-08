@@ -117,8 +117,8 @@ class CiCdStack(Stack):
             },
         )
 
-        self.codepipeline_project = codepipeline.Pipeline(self, "BuildJavaApp",
-                                            pipeline_name=conf["prefix"]+"build",
+        self.codepipeline_project = codepipeline.Pipeline(self, "DeployCDK",
+                                            pipeline_name=conf["prefix"]+"gitops-deploy",
                                             stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
                                                     codepipeline.StageProps(stage_name="DeployDev", actions=[deploy_dev_action])]
                                             )
