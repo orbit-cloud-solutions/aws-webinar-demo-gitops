@@ -19,14 +19,17 @@ version: 0.2
   #build-matrix:
   #build-graph:
 phases:
-  # install:
+  install:
     #If you use the Ubuntu standard image 2.0 or later, you must specify runtime-versions.
     #If you specify runtime-versions and use an image other than Ubuntu standard image 2.0, the build fails.
     #runtime-versions:
       # name: version
       # name: version
-    # commands:
-    #    - command
+    commands:
+       - echo "Installing AWS CDK."
+       - npm install -g aws-cdk 
+       - cd cdk/
+       - python -m pip install -r requirements.txt
   # pre_build:
   #   commands:
   #      - export AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
