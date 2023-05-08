@@ -26,12 +26,13 @@ phases:
       # name: version
       # name: version
     commands:
-       - echo "Installing CDK." 
+       - echo "Installing AWS CDK."
+       - npm install -g aws-cdk 
        - cd cdk/
        - python -m pip install -r requirements.txt
-  pre_build:
-    commands:
-       - export AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
+  # pre_build:
+  #   commands:
+  #      - export AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
   build:
     commands:
        - echo "Deploying CDK stack for $ENV environemnt" 
