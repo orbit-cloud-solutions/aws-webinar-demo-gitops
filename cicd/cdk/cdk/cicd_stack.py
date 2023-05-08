@@ -94,17 +94,21 @@ class CiCdStack(Stack):
             connection_arn=conf["github"]["codestar-connection"],
         )
 
-        ecr_repo_uri=conf["aws_account"]+".dkr.ecr."+conf["aws_region"]+".amazonaws.com/"+conf["ecr_repo_name"]
-
-        deploy_project = codebuild.PipelineProject(self, "CodeBuildCdkDeployDev",
+        deploy_project = codebuild.PipelineProject(self, "CodeBuildCdkDeploy",
             project_name=conf["prefix"]+"cdk-deploy",
             build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-deploy-buildspec.yml"),
             environment=codebuild.BuildEnvironment(
                 build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
             ),
-            environment_variables={
-                "ECR_URI": codebuild.BuildEnvironmentVariable(value=ecr_repo_uri)
-            },
+            timeout=Duration.minutes(20)
+        )
+
+        test_project = codebuild.PipelineProject(self, "CodeBuildTest",
+            project_name=conf["prefix"]+"test",
+            build_spec=codebuild.BuildSpec.from_source_filename("cicd/test-buildspec.yml"),
+            environment=codebuild.BuildEnvironment(
+                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
+            ),
             timeout=Duration.minutes(20)
         )
 
@@ -117,13 +121,72 @@ class CiCdStack(Stack):
             },
         )
 
-        self.codepipeline_project = codepipeline.Pipeline(self, "DeployCDK",
+        deploy_test_action = codepipeline_actions.CodeBuildAction(
+            action_name="DeployTest",
+            project=deploy_project,
+            input=source_output,
+            environment_variables={
+                "ENV": codebuild.BuildEnvironmentVariable(value="test")
+            },
+            run_order=1
+        )
+
+        test_test_action = codepipeline_actions.CodeBuildAction(
+            action_name="TestTest",
+            project=test_project,
+            input=source_output,
+            environment_variables={
+                "ENV": codebuild.BuildEnvironmentVariable(value="test")
+            },
+            run_order=2
+        )
+
+        manual_approve_action=codepipeline_actions.ManualApprovalAction(
+            action_name="Approve",
+            run_order=1
+        )
+
+        deploy_prod_action = codepipeline_actions.CodeBuildAction(
+            action_name="DeployProd",
+            project=deploy_project,
+            input=source_output,
+            environment_variables={
+                "ENV": codebuild.BuildEnvironmentVariable(value="prod")
+            },
+            run_order=2
+        )
+
+        codepipeline_deploy = codepipeline.Pipeline(self, "DeployCDK",
                                             pipeline_name=conf["prefix"]+"gitops-deploy",
                                             stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
-                                                    codepipeline.StageProps(stage_name="DeployDev", actions=[deploy_dev_action])]
+                                                    codepipeline.StageProps(stage_name="DeployDev", actions=[deploy_dev_action]),
+                                                    codepipeline.StageProps(stage_name="DeployTest", actions=[deploy_test_action,test_test_action]),
+                                                    codepipeline.StageProps(stage_name="DeployProd", actions=[manual_approve_action,deploy_prod_action])]
                                             )
         deploy_project.add_to_role_policy(cf_policy_statement)
         deploy_project.add_to_role_policy(sts_policy_statement)
         deploy_project.add_to_role_policy(s3_upload_policy_statement)
         deploy_project.add_to_role_policy(s3_download_policy_statement)
         deploy_project.add_to_role_policy(ecr_policy_statement)
+
+        destroy_all_project = codebuild.PipelineProject(self, "CodeBuildCdkDestroyAll",
+            project_name=conf["prefix"]+"cdk-destroy-all",
+            build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-destroy-all-buildspec.yml"),
+            environment=codebuild.BuildEnvironment(
+                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
+            ),
+            timeout=Duration.minutes(20)
+        )
+
+        deploy_all_action = codepipeline_actions.CodeBuildAction(
+            action_name="DeployAll",
+            project=destroy_all_project,
+            input=source_output,
+            run_order=2
+        )
+
+        codepipeline_destroy = codepipeline.Pipeline(self, "DestroyCDK",
+                                            pipeline_name=conf["prefix"]+"gitops-destroy",
+                                            stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
+                                                    codepipeline.StageProps(stage_name="DestroyAll", actions=[manual_approve_action,deploy_all_action])]
+                                            )
