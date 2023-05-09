@@ -66,7 +66,8 @@ class CdkStack(Stack):
             fargate_task_definition.add_container(prefix+app_env+"-"+deployment["name"],
                 image=ecs.ContainerImage.from_registry(ecr_repo_uri+":"+deployment["version"]),
                 logging=ecs.LogDriver.aws_logs(stream_prefix = deployment["name"], log_group=logDetail),
-                port_mappings=[ecs.PortMapping(container_port = 8080)]
+                port_mappings=[ecs.PortMapping(container_port = 8080)],
+                environment={"BACKGROUND_COLOR":deployment["name"]}
             )
 
             service = ecs.FargateService(self, prefix+app_env+"-"+deployment["name"]+"service",
