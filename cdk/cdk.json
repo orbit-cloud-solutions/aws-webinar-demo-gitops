@@ -62,7 +62,7 @@
             {
               "name":"red",
               "version":"0.3",
-              "weight":100
+              "weight":0
             }
           ]
         },
@@ -73,16 +73,11 @@
             {
               "name":"blue",
               "version":"0.1",
-              "weight":100
+              "weight":0
             },
             {
               "name":"green",
               "version":"0.2",
-              "weight":100
-            },
-            {
-              "name":"red",
-              "version":"0.3",
               "weight":100
             }
           ]
@@ -99,11 +94,6 @@
             {
               "name":"green",
               "version":"0.2",
-              "weight":0
-            },
-            {
-              "name":"red",
-              "version":"0.3",
               "weight":0
             }
           ]
