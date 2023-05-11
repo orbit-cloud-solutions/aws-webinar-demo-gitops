@@ -40,7 +40,7 @@ class CiCdStack(Stack):
             sid="CloudFormation",
             effect=iam.Effect.ALLOW,
             actions=[
-                "cloudformation:DescribeStacks",
+                "cloudformation:DescribeStack*",
                 "cloudformation:GetTemplate",
             ],
             resources=[
@@ -86,14 +86,6 @@ class CiCdStack(Stack):
 
         source_output = codepipeline.Artifact()
 
-        source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
-            action_name="Github_Source",
-            owner=conf["github"]["owner"],
-            repo=conf["github"]["repo"],
-            output=source_output,
-            connection_arn=conf["github"]["codestar-connection"],
-        )
-
         deploy_project = codebuild.PipelineProject(self, "CodeBuildCdkDeploy",
             project_name=conf["prefix"]+"cdk-deploy",
             build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-deploy-buildspec.yml"),
@@ -102,6 +94,12 @@ class CiCdStack(Stack):
             ),
             timeout=Duration.minutes(20)
         )
+
+        deploy_project.add_to_role_policy(cf_policy_statement)
+        deploy_project.add_to_role_policy(sts_policy_statement)
+        deploy_project.add_to_role_policy(s3_upload_policy_statement)
+        deploy_project.add_to_role_policy(s3_download_policy_statement)
+        deploy_project.add_to_role_policy(ecr_policy_statement)
 
         test_project = codebuild.PipelineProject(self, "CodeBuildTest",
             project_name=conf["prefix"]+"test",
@@ -112,64 +110,7 @@ class CiCdStack(Stack):
             timeout=Duration.minutes(20)
         )
 
-        deploy_dev_action = codepipeline_actions.CodeBuildAction(
-            action_name="DeployDev",
-            project=deploy_project,
-            input=source_output,
-            environment_variables={
-                "ENV": codebuild.BuildEnvironmentVariable(value="dev")
-            },
-        )
-
-        deploy_test_action = codepipeline_actions.CodeBuildAction(
-            action_name="DeployTest",
-            project=deploy_project,
-            input=source_output,
-            environment_variables={
-                "ENV": codebuild.BuildEnvironmentVariable(value="test")
-            },
-            run_order=1
-        )
-
-        test_test_action = codepipeline_actions.CodeBuildAction(
-            action_name="TestTest",
-            project=test_project,
-            input=source_output,
-            environment_variables={
-                "ENV": codebuild.BuildEnvironmentVariable(value="test")
-            },
-            run_order=2
-        )
-
-        manual_approve_action=codepipeline_actions.ManualApprovalAction(
-            action_name="Approve",
-            run_order=1
-        )
-
-        deploy_prod_action = codepipeline_actions.CodeBuildAction(
-            action_name="DeployProd",
-            project=deploy_project,
-            input=source_output,
-            environment_variables={
-                "ENV": codebuild.BuildEnvironmentVariable(value="prod")
-            },
-            run_order=2
-        )
-
-        codepipeline_deploy = codepipeline.Pipeline(self, "DeployCDK",
-                                            pipeline_name=conf["prefix"]+"gitops-deploy",
-                                            stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
-                                                    codepipeline.StageProps(stage_name="DeployDev", actions=[deploy_dev_action]),
-                                                    codepipeline.StageProps(stage_name="DeployTest", actions=[deploy_test_action,test_test_action]),
-                                                    codepipeline.StageProps(stage_name="DeployProd", actions=[manual_approve_action,deploy_prod_action])]
-                                            )
-        deploy_project.add_to_role_policy(cf_policy_statement)
-        deploy_project.add_to_role_policy(sts_policy_statement)
-        deploy_project.add_to_role_policy(s3_upload_policy_statement)
-        deploy_project.add_to_role_policy(s3_download_policy_statement)
-        deploy_project.add_to_role_policy(ecr_policy_statement)
-
-        destroy_all_project = codebuild.PipelineProject(self, "CodeBuildCdkDestroyAll",
+        destroy_project = codebuild.PipelineProject(self, "CodeBuildCdkDestroyAll",
             project_name=conf["prefix"]+"cdk-destroy-all",
             build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-destroy-all-buildspec.yml"),
             environment=codebuild.BuildEnvironment(
@@ -178,15 +119,66 @@ class CiCdStack(Stack):
             timeout=Duration.minutes(20)
         )
 
-        deploy_all_action = codepipeline_actions.CodeBuildAction(
-            action_name="DeployAll",
-            project=destroy_all_project,
-            input=source_output,
-            run_order=2
+        destroy_project.add_to_role_policy(cf_policy_statement)
+        destroy_project.add_to_role_policy(sts_policy_statement)
+        destroy_project.add_to_role_policy(s3_upload_policy_statement)
+        destroy_project.add_to_role_policy(s3_download_policy_statement)
+        destroy_project.add_to_role_policy(ecr_policy_statement)
+
+
+        manual_approve_action=codepipeline_actions.ManualApprovalAction(
+            action_name="Approve",
+            run_order=1
         )
 
-        codepipeline_destroy = codepipeline.Pipeline(self, "DestroyCDK",
-                                            pipeline_name=conf["prefix"]+"gitops-destroy",
-                                            stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
-                                                    codepipeline.StageProps(stage_name="DestroyAll", actions=[manual_approve_action,deploy_all_action])]
-                                            )
+        for env in conf["env"].keys(): 
+
+            source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
+                action_name="Github_Source-"+env,
+                owner=conf["github"]["owner"],
+                repo=conf["github"]["repo"],
+                branch=env,
+                output=source_output,
+                connection_arn=conf["github"]["codestar-connection"],
+            )
+        
+            deploy_action = codepipeline_actions.CodeBuildAction(
+                action_name="Deploy-"+env,
+                project=deploy_project,
+                input=source_output,
+                environment_variables={
+                    "ENV": codebuild.BuildEnvironmentVariable(value=env)
+                },
+            )
+
+            test_action = codepipeline_actions.CodeBuildAction(
+                action_name="Test-"+env,
+                project=test_project,
+                input=source_output,
+                environment_variables={
+                    "ENV": codebuild.BuildEnvironmentVariable(value=env)
+                },
+            )
+
+            codepipeline_deploy = codepipeline.Pipeline(self, "DeployCDK-"+env,
+                                                pipeline_name=conf["prefix"]+"gitops-deploy-"+env.upper(),
+                                                stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
+                                                        codepipeline.StageProps(stage_name="Deploy-"+env, actions=[deploy_action]),
+                                                        codepipeline.StageProps(stage_name="Test-"+env, actions=[test_action])]
+                                                )
+
+            deploy_action = codepipeline_actions.CodeBuildAction(
+                action_name="Destroy-"+env,
+                project=destroy_project,
+                input=source_output,
+                environment_variables={
+                    "ENV": codebuild.BuildEnvironmentVariable(value=env)
+                },
+                run_order=2
+            )
+
+            codepipeline_destroy = codepipeline.Pipeline(self, "DestroyCDK-"+env,
+                                                pipeline_name=conf["prefix"]+"gitops-DESTROY-"+env.upper(),
+                                                stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
+                                                        codepipeline.StageProps(stage_name="Destroy-"+env, actions=[manual_approve_action,deploy_action])]
+                                                )

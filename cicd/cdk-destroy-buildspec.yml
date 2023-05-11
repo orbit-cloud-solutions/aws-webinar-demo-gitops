@@ -35,13 +35,6 @@ phases:
   #      - export AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
   build:
     commands:
-       - export ENV="dev"
-       - echo "Destroying $ENV environment:"
-       - cdk destroy --force 
-       - export ENV="test"
-       - echo "Destroying $ENV environment:"
-       - cdk destroy --force 
-       - export ENV="prod"
        - echo "Destroying $ENV environment:"
        - cdk destroy --force 
   # post_build:
