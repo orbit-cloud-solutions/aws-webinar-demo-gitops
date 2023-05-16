@@ -111,8 +111,8 @@ class CiCdStack(Stack):
         )
 
         destroy_project = codebuild.PipelineProject(self, "CodeBuildCdkDestroyAll",
-            project_name=conf["prefix"]+"cdk-destroy-all",
-            build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-destroy-all-buildspec.yml"),
+            project_name=conf["prefix"]+"cdk-destroy",
+            build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-destroy-buildspec.yml"),
             environment=codebuild.BuildEnvironment(
                 build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
             ),
