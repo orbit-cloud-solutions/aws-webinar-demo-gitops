@@ -110,22 +110,6 @@ class CiCdStack(Stack):
             timeout=Duration.minutes(20)
         )
 
-        destroy_project = codebuild.PipelineProject(self, "CodeBuildCdkDestroyAll",
-            project_name=conf["prefix"]+"cdk-destroy",
-            build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-destroy-buildspec.yml"),
-            environment=codebuild.BuildEnvironment(
-                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
-            ),
-            timeout=Duration.minutes(20)
-        )
-
-        destroy_project.add_to_role_policy(cf_policy_statement)
-        destroy_project.add_to_role_policy(sts_policy_statement)
-        destroy_project.add_to_role_policy(s3_upload_policy_statement)
-        destroy_project.add_to_role_policy(s3_download_policy_statement)
-        destroy_project.add_to_role_policy(ecr_policy_statement)
-
-
         manual_approve_action=codepipeline_actions.ManualApprovalAction(
             action_name="Approve",
             run_order=1
@@ -165,20 +149,4 @@ class CiCdStack(Stack):
                                                 stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
                                                         codepipeline.StageProps(stage_name="Deploy-"+env, actions=[deploy_action]),
                                                         codepipeline.StageProps(stage_name="Test-"+env, actions=[test_action])]
-                                                )
-
-            destroy_action = codepipeline_actions.CodeBuildAction(
-                action_name="Destroy-"+env,
-                project=destroy_project,
-                input=source_output,
-                environment_variables={
-                    "ENV": codebuild.BuildEnvironmentVariable(value=env)
-                },
-                run_order=2
-            )
-
-            codepipeline_destroy = codepipeline.Pipeline(self, "DestroyCDK-"+env,
-                                                pipeline_name=conf["prefix"]+"gitops-DESTROY-"+env.upper(),
-                                                stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
-                                                        codepipeline.StageProps(stage_name="Destroy-"+env, actions=[manual_approve_action,destroy_action])]
                                                 )
