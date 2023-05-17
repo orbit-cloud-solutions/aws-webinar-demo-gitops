@@ -167,7 +167,7 @@ class CiCdStack(Stack):
                                                         codepipeline.StageProps(stage_name="Test-"+env, actions=[test_action])]
                                                 )
 
-            deploy_action = codepipeline_actions.CodeBuildAction(
+            destroy_action = codepipeline_actions.CodeBuildAction(
                 action_name="Destroy-"+env,
                 project=destroy_project,
                 input=source_output,
@@ -180,5 +180,5 @@ class CiCdStack(Stack):
             codepipeline_destroy = codepipeline.Pipeline(self, "DestroyCDK-"+env,
                                                 pipeline_name=conf["prefix"]+"gitops-DESTROY-"+env.upper(),
                                                 stages=[codepipeline.StageProps(stage_name="Source", actions=[source_action]),
-                                                        codepipeline.StageProps(stage_name="Destroy-"+env, actions=[manual_approve_action,deploy_action])]
+                                                        codepipeline.StageProps(stage_name="Destroy-"+env, actions=[manual_approve_action,destroy_action])]
                                                 )

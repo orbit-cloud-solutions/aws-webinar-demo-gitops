@@ -1,16 +1,16 @@
 {
-    "aws_account": "628880123822",
+    "aws_account": "904867874494",
     "aws_region": "eu-central-1",
     "prefix":"aws-webinar-demo-",
     "github":{
       "owner":"orbit-cloud-solutions",
       "repo":"aws-webinar-demo-gitops",
-      "codestar-connection":"arn:aws:codestar-connections:eu-central-1:628880123822:connection/2675eb12-23ca-4ab9-9e2f-4ed198cea551"
+      "codestar-connection":"arn:aws:codestar-connections:eu-central-1:904867874494:connection/ab71a31f-2e75-470c-9f03-ced20e829519"
     },
     "ecr_repo_name":"aws-webinar-demo-app-repo",
-    "r53_zone_id":"Z02865741U7Y1BNFZTB4Z",
-    "r53_zone_name":"gitops-demo.virtualcomputing.cz",
-    "acm_certificate_arn":"arn:aws:acm:eu-central-1:628880123822:certificate/c8904e50-88d5-4962-a12d-4dbfa858779b",
+    "r53_zone_id":"Z01026111ZA39UNUBQTYI",
+    "r53_zone_name":"webinar.aws.orbit.cz",
+    "acm_certificate_arn":"arn:aws:acm:eu-central-1:904867874494:certificate/dacf6c3a-45a9-4d84-84ea-563e53ef0c56",
     "env":{
       "dev":{
         "cpu_size":256,
