@@ -19,12 +19,12 @@
           {
             "name":"blue",
             "version":"0.1",
-            "weight":100
+            "weight":50
           },
           {
             "name":"green",
             "version":"0.2",
-            "weight":100
+            "weight":50
           },
           {
             "name":"red",
@@ -50,18 +50,13 @@
         ]
       },
       "prod":{
-        "cpu_size":256,
-        "memory_size":512,
+        "cpu_size":512,
+        "memory_size":1024,
         "deployments":[
           {
             "name":"blue",
             "version":"0.1",
             "weight":100
-          },
-          {
-            "name":"green",
-            "version":"0.2",
-            "weight":0
           }
         ]
       }
