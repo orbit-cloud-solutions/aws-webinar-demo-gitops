@@ -84,44 +84,44 @@ class CiCdStack(Stack):
             ]
         )
 
-        source_output = codepipeline.Artifact()
-
-        deploy_project = codebuild.PipelineProject(self, "CodeBuildCdkDeploy",
-            project_name=conf["prefix"]+"cdk-deploy",
-            build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-deploy-buildspec.yml"),
-            environment=codebuild.BuildEnvironment(
-                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
-            ),
-            timeout=Duration.minutes(20)
-        )
-
-        deploy_project.add_to_role_policy(cf_policy_statement)
-        deploy_project.add_to_role_policy(sts_policy_statement)
-        deploy_project.add_to_role_policy(s3_upload_policy_statement)
-        deploy_project.add_to_role_policy(s3_download_policy_statement)
-        deploy_project.add_to_role_policy(ecr_policy_statement)
-
-        test_project = codebuild.PipelineProject(self, "CodeBuildTest",
-            project_name=conf["prefix"]+"test",
-            build_spec=codebuild.BuildSpec.from_source_filename("cicd/test-buildspec.yml"),
-            environment=codebuild.BuildEnvironment(
-                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
-            ),
-            timeout=Duration.minutes(20)
-        )
-
-        manual_approve_action=codepipeline_actions.ManualApprovalAction(
-            action_name="Approve",
-            run_order=1
-        )
+        source_output = codepipeline.Artifact()    
 
         for env in conf["env"].keys(): 
+
+            deploy_project = codebuild.PipelineProject(self, "CodeBuildCdkDeploy-"+env,
+                project_name=conf["prefix"]+"cdk-deploy-"+env,
+                build_spec=codebuild.BuildSpec.from_source_filename("cicd/cdk-deploy-buildspec.yml"),
+                environment=codebuild.BuildEnvironment(
+                    build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
+                ),
+                timeout=Duration.minutes(20)
+            )
+
+            deploy_project.add_to_role_policy(cf_policy_statement)
+            deploy_project.add_to_role_policy(sts_policy_statement)
+            deploy_project.add_to_role_policy(s3_upload_policy_statement)
+            deploy_project.add_to_role_policy(s3_download_policy_statement)
+            deploy_project.add_to_role_policy(ecr_policy_statement)
+
+            test_project = codebuild.PipelineProject(self, "CodeBuildTest-"+env,
+                project_name=conf["prefix"]+"test-"+env,
+                build_spec=codebuild.BuildSpec.from_source_filename("cicd/test-buildspec.yml"),
+                environment=codebuild.BuildEnvironment(
+                    build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_4, privileged=True
+                ),
+                timeout=Duration.minutes(20)
+            )
+
+            branch = env
+
+            if env == "prod":
+                branch = "master"
 
             source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
                 action_name="Github_Source-"+env,
                 owner=conf["github"]["owner"],
                 repo=conf["github"]["repo"],
-                branch=env,
+                branch=branch,
                 output=source_output,
                 connection_arn=conf["github"]["codestar-connection"],
             )
