@@ -18,7 +18,7 @@
         "deployments":[
           {
             "name":"blue",
-            "version":"0.1",
+            "version":"0.3",
             "weight":50
           },
           {
@@ -27,8 +27,8 @@
             "weight":50
           },
           {
-            "name":"red",
-            "version":"0.3",
+            "name":"orange",
+            "version":"0.4",
             "weight":0
           }
         ]
@@ -39,12 +39,7 @@
         "deployments":[
           {
             "name":"blue",
-            "version":"0.1",
-            "weight":0
-          },
-          {
-            "name":"green",
-            "version":"0.2",
+            "version":"0.3",
             "weight":100
           }
         ]
@@ -56,7 +51,12 @@
           {
             "name":"blue",
             "version":"0.1",
-            "weight":100
+            "weight":90
+          },
+          {
+            "name":"green",
+            "version":"0.2",
+            "weight":10
           }
         ]
       }
