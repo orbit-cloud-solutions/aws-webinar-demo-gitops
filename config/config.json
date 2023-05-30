@@ -56,7 +56,12 @@
         {
           "name":"blue",
           "version":"0.1",
-          "weight":100
+          "weight":90
+        },          
+        {
+          "name":"green",
+          "version":"0.2",
+          "weight":10
         }
       ]
     }
